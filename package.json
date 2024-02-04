@@ -10,8 +10,8 @@
     "mit"
   ],
   "description": "A high-performant MIT-licensed React DataGrid component for everyone.",
-  "homepage": "",
   "type": "module",
+  "homepage": "",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/hiquest/mugrid.git"
@@ -39,12 +39,14 @@
     "build-storybook": "storybook build"
   },
   "peerDependencies": {
-    "react": "^17.0.0 || ^18.0.0",
-    "react-dom": "^17.0.0 || ^18.0.0",
     "@emotion/react": "^11.0.0",
-    "@emotion/styled": "^11.0.0"
+    "@emotion/styled": "^11.0.0",
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0"
   },
   "devDependencies": {
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
     "@storybook/addon-essentials": "^7.6.12",
     "@storybook/addon-interactions": "^7.6.12",
     "@storybook/addon-links": "^7.6.12",
@@ -61,6 +63,7 @@
     "esbuild": "^0.20.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "rollup-plugin-visualizer": "^5.12.0",
@@ -68,8 +71,6 @@
     "typescript": "^5.3.3",
     "vite": "^4.5.2",
     "vite-plugin-dts": "^3.7.2",
-    "vitest": "^1.2.2",
-    "@emotion/react": "^11.11.3",
-    "@emotion/styled": "^11.11.0"
+    "vitest": "^1.2.2"
   }
 }

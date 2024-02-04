@@ -1,5 +1,6 @@
 import { Meta } from "@storybook/react";
 import { ColumnDef, DataGrid } from "./DataGrid";
+import React from "react";
 
 export default {
   title: "Components/DataGrid",
