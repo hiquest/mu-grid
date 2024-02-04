@@ -6,7 +6,7 @@ A high-performant MIT-licensed React DataGrid component for everyone.
 ## Features
 
 - 💯 Free & open-source
-- 🚀 High performance
+- 🚀 TypeScript-first
 - 📦 Small bundle size
 - 🎨 Customizable
 
