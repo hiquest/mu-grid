@@ -1,9 +1,14 @@
 {
   "name": "mugrid",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": "Yanis",
   "license": "MIT",
-  "keywords": ["react", "datagrid", "table", "mit"],
+  "keywords": [
+    "react",
+    "datagrid",
+    "table",
+    "mit"
+  ],
   "description": "A high-performant MIT-licensed React DataGrid component for everyone.",
   "homepage": "",
   "type": "module",
