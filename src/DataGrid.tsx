@@ -2,32 +2,55 @@ import { ThemeProvider } from "@emotion/react";
 import styled from "@emotion/styled";
 import React from "react";
 import { DEFAULT_THEME, DefaultTheme } from "./theme";
+import IconButton from "./components/IconButton";
+import FilterIcon from "./components/icons/FilterIcon";
+import { SortState, sortData, useSort } from "./useSort";
+import DownIcon from "./components/icons/DownIcon";
 
 declare module "@emotion/react" {
   export interface Theme extends DefaultTheme {}
 }
 
-export type ColumnDef<T extends object> = {
-  field: string;
+export type ColumnDef<T extends Record<string, unknown>> = {
+  field: keyof T;
   headerName: string;
+
+  // default: true
   sortable?: boolean;
+
+  // default: false
   filterable?: boolean;
+
+  // default: false
   editable?: boolean;
   cellRenderer?: (row: T) => React.ReactNode;
   headerRenderer?: () => React.ReactNode;
+
+  align?: "left" | "right";
 };
 
-export type DataGridProps<T extends object> = {
+export type DataGridProps<T extends Record<string, unknown>> = {
   data: T[];
   columns: ColumnDef<T>[];
   rowToId?: (row: T) => string;
-  // enableSorting?: boolean;
-  // defaultSortField?: string;
-  // defaultSortDirection?: "asc" | "desc";
-  // onSortChange?: (sortField: string, sortDirection: "asc" | "desc") => void;
-  // enableFiltering?: boolean;
-  // defaultFilters?: Record<string, string>;
-  // onFilterChange?: (filters: Record<string, string>) => void;
+
+  // ======
+  // Sorting
+  // ======
+  // default: "client"
+  sorting: "disabled" | "client" | "server";
+
+  // when sorting === "server"
+  onSortChange?: (model: SortState<T>) => void;
+
+  defaultSortState?: SortState<T>;
+
+  // ======
+  // Filtering
+  // ======
+  enableFiltering?: boolean;
+  defaultFilters?: Record<string, string>;
+  onFilterChange?: (filters: Record<string, string>) => void;
   // pagination?: {
   //   enabled: boolean;
   //   pageSize: number;
@@ -69,7 +92,7 @@ const DivTable = styled.div`
 
 const DivTableHead = styled.div`
   display: table-header-group;
-  background-color: ${({ theme }) => theme.colors.header};
+  background-color: ${({ theme }) => theme.colors.headerBg};
   width: 100%;
 `;
 
@@ -83,23 +106,77 @@ const DivTableRow = styled.div`
 
 const DivTableHeader = styled.div`
   display: table-cell;
-  padding: ${({ theme: t }) => `${t.spacing[2]} ${t.spacing[3]}`};
+  padding: ${({ theme: t }) => `${t.spacing[1]} ${t.spacing[3]}`};
   border-top: 1px solid ${({ theme: t }) => t.colors.border};
   border-bottom: 1px solid ${({ theme: t }) => t.colors.border};
-  text-align: left;
+  &.align-right {
+    text-align: right;
+  }
+`;
+
+const ThInner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  svg {
+    color: ${({ theme }) => theme.colors.textLight};
+    cursor: pointer;
+  }
+  &:hover {
+    svg {
+      color: ${({ theme }) => theme.colors.text};
+    }
+  }
 `;
 
 const DivTableCell = styled.div`
   display: table-cell;
   padding: ${({ theme: t }) => `${t.spacing[2]} ${t.spacing[3]}`};
   border-bottom: 1px solid ${({ theme: t }) => t.colors.border};
+  &.align-right {
+    text-align: right;
+  }
 `;
 
-export const DataGrid = <T extends object>({
+const SortableName = styled.div`
+  color: ${({ theme }) => theme.colors.headerText};
+  cursor: pointer;
+  transition: color ${({ theme }) => theme.transitions.normal} ease-in-out;
+  display: flex;
+  align-items: center;
+  svg {
+    color: ${({ theme }) => theme.colors.textLight};
+    cursor: pointer;
+    margin-left: ${({ theme }) => theme.spacing[0]};
+  }
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.text};
+    svg {
+      color: ${({ theme }) => theme.colors.text};
+    }
+  }
+`;
+
+export const DataGrid = <T extends Record<string, unknown>>({
   data,
   columns,
   rowToId,
+  defaultSortState,
+  sorting = "client",
+  onSortChange,
 }: DataGridProps<T>) => {
+  const cols = withDefaults(columns);
+
+  const { getAriaSort, handleSortChange, getFieldSort, sortState } = useSort({
+    sorting,
+    defaultSortState,
+    sortableColumns: cols.filter((c) => c.sortable).map((c) => c.field),
+  });
+
+  // ===============
+  // SANITY CHECKS
+  // ===============
   if (data[0]) {
     if (!("id" in data[0]) && !rowToId) {
       throw new Error(
@@ -108,44 +185,69 @@ export const DataGrid = <T extends object>({
     }
   }
 
+  if (sorting === "server" && !onSortChange) {
+    throw new Error(
+      'DataGrid: "onSortChange" is required when "sorting" is set to "server".'
+    );
+  }
+
+  const sortedData = sortData(data, sortState);
+
   return (
     <ThemeProvider theme={DEFAULT_THEME}>
       <DivTable role="grid" className="DataGridRoot">
         <DivTableHead className="DataGridHead" role="rowgroup">
           <DivTableRow role="row" aria-rowindex={1}>
-            {columns.map((column, index) => (
+            {cols.map((column, index) => (
               <DivTableHeader
-                key={column.field}
+                key={String(column.field)}
                 role="columnheader"
                 aria-colindex={index + 1}
+                aria-sort={getAriaSort(column.field)}
+                className={`DataGridHeaderCell align-${column.align}`}
               >
-                {column.headerName}
+                <ThInner>
+                  <SortableName onClick={() => handleSortChange(column.field)}>
+                    {column.headerName}
+                    {sortIcon(getFieldSort(column.field))}
+                  </SortableName>
+                  {column.filterable && (
+                    <IconButton
+                      icon={<FilterIcon />}
+                      label={`Filter by ${column.headerName}`}
+                      onClick={() => {
+                        console.log(`Filtering by ${column.headerName}`);
+                      }}
+                    />
+                  )}
+                </ThInner>
               </DivTableHeader>
             ))}
           </DivTableRow>
         </DivTableHead>
         <DivTableBody className="DataGridBody" role="rowgroup">
-          {data.map((row, rowIndex) => (
+          {sortedData.map((row, rowIndex) => (
             <DivTableRow
               key={
                 rowToId
                   ? rowToId(row)
                   : "id" in row
-                  ? (row.id as string)
+                  ? String(row["id"])
                   : rowIndex
               }
               role="row"
               aria-rowindex={rowIndex + 2}
             >
-              {columns.map((column, index) => (
+              {cols.map((column, index) => (
                 <DivTableCell
-                  key={column.field}
+                  key={String(column.field)}
                   role="cell"
                   aria-colindex={index + 1}
+                  className={`DataGridCell align-${column.align}`}
                 >
                   {column.cellRenderer
                     ? column.cellRenderer(row)
-                    : row[column.field]}
+                    : String(row[column.field])}
                 </DivTableCell>
               ))}
             </DivTableRow>
@@ -156,59 +258,26 @@ export const DataGrid = <T extends object>({
   );
 };
 
-// <DataGrid
-//   // Data and Columns
-//   data={dataArray} // Array of objects representing row data
-//   columns={columnDefs} // Array of objects defining column configurations
-//   // Features: Sorting
-//   enableSorting={true} // Enables sorting on columns
-//   defaultSortField="id" // Field to sort by default
-//   defaultSortDirection="asc" // Sort direction ('asc' or 'desc')
-//   onSortChange={handleSortChange} // Callback for when sorting changes
-//   // Features: Filtering
-//   enableFiltering={true} // Enables filtering on columns
-//   defaultFilters={filterObject} // Object representing default filters
-//   onFilterChange={handleFilterChange} // Callback for when filters change
-//   // Features: Pagination
-//   pagination={{
-//     enabled: true,
-//     pageSize: 10,
-//     currentPage: 1,
-//     onPageChange: handlePageChange,
-//   }}
-//   // Features: Selection
-//   rowSelection="multiple" // 'none', 'single', 'multiple'
-//   selectedRowIds={selectedIds} // Array or set containing IDs of selected rows
-//   onSelectionChange={handleSelectionChange} // Callback when selection changes
-//   // Features: Editing
-//   enableEditing={true} // Enables editing functionality
-//   onEditCommit={handleEditCommit} // Callback for when edits are committed
-//   // Features: Grouping and Aggregation
-//   enableGrouping={true} // Enables grouping functionality
-//   groupByFields={groupByFieldsArray} // Array of fields to group by
-//   aggregationFunctions={aggregationFunctionsObject} // Aggregation functions
-//   // Features: Exporting
-//   onExport={handleExport} // Callback to trigger data export
-//   // Features: State Persistence
-//   persistedState={persistedStateObject} // Object for persisted state
-//   onStateChange={handleStateChange} // Callback for state change
-//   // Customization & Extensibility
-//   customRenderers={{
-//     cell: CustomCellRenderer,
-//     header: CustomHeaderRenderer,
-//   }}
-//   // Accessibility & Internationalization
-//   locale="en-US" // Locale identifier
-//   accessibilityOptions={{
-//     rowAriaLabel: (row) => `Row ${row.id}`,
-//     ...otherA11yProps,
-//   }}
-//   // Styling
-//   className="custom-grid-class" // Custom CSS class for styling
-//   style={{ maxHeight: "500px" }} // Inline styles object
-//   // Additional Utility Features
-//   resizableColumns={true} // Allow column resizing
-//   virtualized={true} // Use virtualization to render rows
-//   // API & Documentation
-//   apiRef={gridApi} // Exposing grid API for more control
-// />;
+function withDefaults<T extends Record<string, unknown>>(
+  columns: ColumnDef<T>[]
+): ColumnDef<T>[] {
+  return columns.map((c) => ({
+    sortable: true,
+    filterable: false,
+    editable: false,
+    align: "left",
+    ...c,
+  }));
+}
+
+function sortIcon(sort: "asc" | "desc" | null) {
+  if (sort === "asc") {
+    return <DownIcon rotated />;
+  }
+
+  if (sort === "desc") {
+    return <DownIcon />;
+  }
+
+  return null;
+}

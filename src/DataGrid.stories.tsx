@@ -48,12 +48,22 @@ const data: Person[] = [
     salary: 150000,
     position: "Manager",
   },
+  {
+    id: 4,
+    name: "Mark Johnson",
+    age: 50,
+    email: "mark@nope.com",
+    phone: "123-456-7890",
+    salary: 1500000,
+    position: "CEO",
+  },
 ];
 
 const columns: ColumnDef<Person>[] = [
   {
     field: "name",
     headerName: "Name",
+    filterable: true,
   },
   {
     field: "age",
@@ -62,6 +72,7 @@ const columns: ColumnDef<Person>[] = [
   {
     field: "email",
     headerName: "Email",
+    filterable: true,
   },
   {
     field: "phone",
@@ -70,10 +81,14 @@ const columns: ColumnDef<Person>[] = [
   {
     field: "position",
     headerName: "Position",
+    filterable: true,
   },
   {
     field: "salary",
     headerName: "Salary",
+    cellRenderer: (row) => `${row.salary.toLocaleString()}`,
+    align: "right",
+    sortable: true,
   },
 ];
 
